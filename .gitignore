@@ -2,6 +2,8 @@ build/
 devel/
 install/
 *.pyc
-
+*.png
+*.jpg
+__pycache__/
 log
 
