@@ -29,6 +29,9 @@ class DrawArtTurtleSim(Node):
         self.timer = self.create_timer(timer_period, self.publish_callback)
 
     def kill_and_spawn_turtlesim_bot(self, spawn_pose=[6.0,6.0]):
+        """
+        Kill the current turtle sim bot and spawn it at a desired pose
+        """
         kill_client = self.create_client(Kill, '/turtlesim1/kill')
         while not kill_client.wait_for_service(timeout_sec=1.0):
             self.get_logger().info('Kill service not available, waiting again...')
@@ -62,13 +65,14 @@ class DrawArtTurtleSim(Node):
             self.get_logger().error('Failed to spawn turtle')
 
     def publish_callback(self):
-        self.get_logger().info("Inside Publisher")
+        """Puiblish the Twist Messages"""
         twist = Twist()
-        twist.linear.x = min(1.0, 2*self.distance)
-        twist.angular.z = min(1.0, max(-1.0, 3.0*self.angle))
+        twist.linear.x = min(1.5, 2.0*self.distance)
+        twist.angular.z = min(1.5, max(-1.0, 3.0*self.angle))
         self.publisher.publish(twist)
         
     def pose_callback(self, msg):
+        """Pose Callback to get the current position of the turtlesim bot"""
         self.turtle_x_pose = msg.x
         self.turtle_y_pose = msg.y
         self.theta = msg.theta
@@ -76,6 +80,11 @@ class DrawArtTurtleSim(Node):
 
     
     def read_image(self):
+        """
+        - Read an input image
+        - Convert the Image to Gray scale and extract the edges
+        - After detecting the edges extract the contours along the edges
+        """
         self.get_logger().info("Image Path : {}".format(self.image_path))
         #image = Image.open(self.image_path)
         image = cv2.imread(self.image_path, 0)
@@ -84,11 +93,13 @@ class DrawArtTurtleSim(Node):
         # Detecting Edges on the Image using the argument ImageFilter.FIND_EDGES
         image = Image.fromarray(image)
         image = image.filter(ImageFilter.FIND_EDGES)
-        image = image.filter(ImageFilter.MaxFilter(1))
+        #image = image.filter(ImageFilter.MaxFilter(1))
 
         ret, thresh = cv2.threshold(np.array(image), 127, 255, 0)
         contours, hierarchy = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
         blank_image = np.zeros(image.size)
+        blank_image = cv2.drawContours(blank_image, contours, -1, (255, 255, 255), 3)
+        cv2.imwrite("contours.jpg", blank_image)
         approx_ = []
         for contour in contours:
             # Perform contour approximation
@@ -105,8 +116,7 @@ class DrawArtTurtleSim(Node):
         self.__contours = np.array(contour_list)
         #self.get_logger().info("Contours filtered: {}".format(self.__contours))
         
-        #blank_image = cv2.drawContours(blank_image, contour_list, -1, (255, 255, 255), 3)
-        cv2.imwrite("contours.jpg", blank_image)
+        
         cv2.imwrite("Edges.jpg", np.array(image))
 
     def run(self):
@@ -141,7 +151,8 @@ class DrawArtTurtleSim(Node):
                 self.angle = np.arctan2(dy,dx) - self.theta
                 self.get_logger().info("Pose X : {}, Pose Y : {}".format(self.turtle_x_pose, self.turtle_y_pose))
                 self.get_logger().info("point x : {}, point y : {}".format(point[0], point[1]))
-                    
+                
+                """Determine the desired angle and the distance for the turtle to move"""
                 while abs(self.angle) > 0.005:
                     dx = point[0] - self.turtle_x_pose
                     dy = point[1] - self.turtle_y_pose
@@ -185,9 +196,6 @@ def main(args=None):
     #node_handle = rclpy.create_node("turtle_sim_draw")
     node_handle = DrawArtTurtleSim()
 
-    #image = cv2.imread(image_path)
-    #cv2.namedWindow("Input", cv2.WINDOW_NORMAL)
-    #cv2.resizeWindow("Input", 640, 480)
     node_handle.run()
     rclpy.shutdown()
 
