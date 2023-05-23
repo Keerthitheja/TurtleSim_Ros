@@ -18,7 +18,7 @@ In this project we use turtlesim bot to draw the shape of an input image
  * Take a test image `test_image.png`
  * Run the command - `$ros2 launch turtlesim_art turtlesim_art.launch.py image_path:=test_image.png`
 
- This will run the turtlesim bot and it will start drawing the patter
+ This will run the turtlesim bot and start drawing the pattern
 
  ## TODO
  - Spawn multiple turtles to speed up the sketch
